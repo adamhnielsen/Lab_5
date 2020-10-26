@@ -1,0 +1,118 @@
+---
+title: "Lab 5"
+author: "Adam Nielsen"
+date: "October 21, 2020"
+output: html_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE) 
+```
+
+1. Create a RStudio Project on your machine.
+
+* Within the Project create a folder for *data* and *scripts*.
+* Download the following three datasets into the project *data* folder.
+  + *sesame13.sav*
+  + *star.csv*
+  + *ais.xlsx*
+
+2. Read in the following three datasets, using `{here}` and `{rio}`:
+  * *sesame13.sav*
+  * *star.csv*
+  * *ais.xlsx*
+  
+**Hint**: For the *ais.xlsx* dataset look at the `skip` argument within the `rio` help documentation.
+  
+```{r import}
+library(rio)
+library(here)
+library(tidyverse)
+ais <- import(here("Lab_5", "data", "ais.xlsx"), skip = 14)
+sesame <- import(here("Lab_5", "data", "sesame13.sav"))
+star <- import(here("Lab_5", "data", "star.csv"))
+```
+
+3. Using the `ais` data, compute the average red blood cell count and average bmi by sport. Output these data as SPSS and EXCEL files. 
+
+```{r q2}
+ais_averages <- ais%>% 
+  select(sport,rcc, bmi) %>% 
+  group_by(sport) %>% 
+  summarize(mean_rcc = mean(rcc),mean_bmi = mean(bmi))
+
+export(ais_averages, here("Lab_5", "data", "ais_averages.sav"))
+export(ais_averages, here("Lab_5", "data", "ais_averages.xlsx"))
+```
+
+4. Use the `sesame` dataset to answer the following question: Was the average female age higher in schools or at home? 
+
+```{r q3}
+sesame_avg <- sesame %>% 
+  characterize() %>% 
+  filter(sex == "Female") %>% 
+  group_by(setting) %>% 
+  summarize(mean_age = mean(age))
+sesame_avg
+```
+>The average female age was higher in schools.
+
+5. First, how many rows and columns are in the *star* dataset? Next, remove outliers using a really poor method, just for practice, by eliminating students whose math (*tmathss*) scores were more than three standard deviations **above or below** the corresponding mean. How many rows are in the dataset now?
+
+```{r q4}
+dim(star)
+
+mean_star <- star %>% 
+  mutate(mean_tmathss = mean(tmathss), sd_tmathss = sd(tmathss))
+ 
+filter_star <- mean_star %>%  
+filter(tmathss > mean_tmathss - 3*sd_tmathss, 
+       tmathss < mean_tmathss + 3*sd_tmathss)
+dim(filter_star)
+
+```
+
+
+* **5748 rows and 12 columns**
+* **5743 rows**
+
+
+6. Use the `star` dataset to compute standardized math and reading scores; name these variables *tmathss* and *treadss*. This means, for each of these variables, subtract the mean from each observation and divide by the standard deviation: $x_s = \frac{x_i - \bar{X}}{sd(X)}$. 
+  + Check that your computations were correct by computing the mean and standard deviation of each variable (they should be 0 and 1). 
+  + Compute the mean of the standardized variable for all *sex*/*frl* combinations (I'm asking you to extend what you know here, we haven't talked explicitly about how to do this yet, but you have seen examples). 
+  + What do you make of these findings? Do you see an effect by *sex*? An *FRL* effect? Is there evidence of an interaction (i.e., that the effect of *FRL* is greater for boys versus girls)?
+
+```{r q5}
+new_star <- star %>% 
+  mutate(mean_tmathss = mean(tmathss),
+         sd_tmathss = sd(tmathss),
+         mean_treadss = mean(treadss),
+         sd_treadss = sd(treadss))
+
+standard_star <- new_star %>% 
+  mutate(tmathss = (tmathss-mean_tmathss)/sd_tmathss,
+         treadss = (treadss-mean_treadss)/sd_treadss)
+
+standard_star %>% 
+  summarize(standard_mean_tmathss = round(mean(tmathss), digits = 5),
+            standard_sd_tmathss = sd(tmathss))
+
+standard_star %>% 
+  summarize(standard_mean_treadss = round(mean(treadss), digits = 5),
+            standard_sd_treadss = sd(treadss))
+
+mean_std_var_math <- standard_star %>% 
+  group_by(sex, frl) %>% 
+  summarize(mean_std_math = mean(tmathss))
+
+mean_std_var_read <- standard_star %>% 
+  group_by(sex, frl) %>% 
+  summarize(mean_std_read = mean(treadss))
+
+mean_std_var_math
+mean_std_var_read
+```
+
+**Assuming I did this correctly, there _does_ seem to be an effect by sex, and there _does_ seem to be an effect by FRL, but I'm not sure what frl means and what exactly this data is supposed to be representing so I'm not sure I could say what exactly the effect is. I'm not sure I could say with confidence that the FRL has more effect on boys than girls.**
+
+Please submit you .Rmd file, as well as the rendered .html file.
