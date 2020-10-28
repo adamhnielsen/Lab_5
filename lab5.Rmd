@@ -28,7 +28,7 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE)
 library(rio)
 library(here)
 library(tidyverse)
-ais <- import(here("Lab_5", "data", "ais.xlsx"), skip = 15)
+ais <- import(here("Lab_5", "data", "ais.xlsx"), skip = 14)
 sesame <- import(here("Lab_5", "data", "sesame13.sav"))
 star <- import(here("Lab_5", "data", "star.csv"))
 ```
